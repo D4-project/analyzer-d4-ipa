@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# ICMP Passive Analyzer for D4
+# Inspection library for the analyzer
 #
 # Copyright (C) 2019  Romain Kieffer
 #

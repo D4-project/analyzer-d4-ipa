@@ -126,7 +126,7 @@ class Analyzer:
             icmp_layer = packet.icmp
 
             icmp_type = str(icmp_layer.type)
-            icmp_code = str(icmp_layer.code)
+            # icmp_code = str(icmp_layer.code)
             protocol = get_protocol(packet)
             checksum_status = check_icmp_checksum(packet.icmp_raw.value)
 
@@ -150,7 +150,7 @@ class Analyzer:
             pipeline.hincrby('checksum', 'total')
             pipeline.hincrby('checksum', checksum_status)
 
-            entry = str(get_src_port(packet)) + ':' + protocol + ':' + icmp_type + ':' + icmp_code
+            # entry = str(get_src_port(packet)) + ':' + protocol + ':' + icmp_type + ':' + icmp_code
             # pipeline.zadd(source_ip, {entry: 1}, incr=True)
 
             pipeline.zadd('protocols', {protocol: 1}, incr=True)
@@ -166,7 +166,6 @@ class Analyzer:
         return 0
 
     def pop_cap(self):
-        absolute_path = None
         if not self.dataset:
             absolute_path = self.r_d4.rpop(self.queue)
         else:
