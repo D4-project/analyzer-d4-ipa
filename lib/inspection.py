@@ -125,10 +125,27 @@ def get_cap(path_to_cap):
 
 
 def get_files(path) -> list:
-    """
-    Gets the path of any file in the given directory.
-    """
     caps = glob(path)
+    return caps
+
+
+def init_cap_list(dataset_path: str, daylist: list) -> list:
+    cap_list = []
+    if not daylist:
+        return []
+    for day in daylist:
+        cap_path = dataset_path + str(day) + '/*.gz'
+        caps = get_files(cap_path)
+        caps.sort()
+        cap_list += caps
+    return cap_list
+
+
+def list_caps(state: str, redis):
+    caps = []
+    b_list = redis.lrange(state, 0, -1)
+    for item in b_list:
+        caps.append(item.decode())
     return caps
 
 
