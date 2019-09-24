@@ -25,7 +25,7 @@ import configparser
 import logging
 
 from lib.inspection import get_cap, get_protocol, check_icmp_checksum, get_icmp_payload, get_icmp_ip, \
-    unassigned_icmp_types, deprecated_icmp_types, get_src_port, get_dst_port, list_caps
+    unassigned_icmp_types, deprecated_icmp_types, get_src_port, get_dst_port, list_caps, init_cap_list
 
 
 class Analyzer:
@@ -51,7 +51,7 @@ class Analyzer:
         self.logger.addHandler(self.ch)
 
         analyzer_redis_host = os.getenv('D4_ANALYZER_REDIS_HOST', '127.0.0.1')
-        analyzer_redis_port = int(os.getenv('D4_ANALYZER_REDIS_PORT', 6400))
+        analyzer_redis_port = int(os.getenv('D4_ANALYZER_REDIS_PORT', 6405))
         self.r = redis.Redis(host=analyzer_redis_host, port=analyzer_redis_port)
 
         self.dataset = dataset_path
@@ -65,9 +65,15 @@ class Analyzer:
             self.r_d4 = redis.Redis(host=host_redis_metadata, port=port_redis_metadata, db=2)
         else:
             self.logger.info("Starting local analyzer")
-            self.update_queue()
+            self.queue = "to_scan"
             self.cap_list = []
+            self.logger.info("Adding dataset caps to local queue")
+            self.cap_list = init_cap_list(self.dataset)
+            self.logger.info(len(self.cap_list))
+            self.update_queue()
+            self.logger.info("Processing...")
             self.process_local()
+            self.logger.info("Done.")
             time.sleep(15)
             c = self.update_queue()
             if c == 0:
@@ -83,27 +89,23 @@ class Analyzer:
         p.execute()
 
     def update_queue(self):
-        """
-        Each parser instance is given a list of days, and thus a list of caps to parse.
-        This method lets the parser confront his list of caps with the caps in his queue.
-        """
         remaining_caps = list_caps(self.queue, self.r)
         current_caps = list_caps('scanning', self.r)
         parsed_caps = list_caps('scanned', self.r)
         caps_to_add = []
         if remaining_caps:
-            print('[*] Queue already populated.')
+            self.logger.info('Queue already populated.')
             if self.cap_list:
                 for cap in self.cap_list:
                     if cap not in remaining_caps and cap not in parsed_caps and cap not in current_caps:
                         caps_to_add.append(cap)
             if not caps_to_add:
-                print('[*] Already up to date.')
+                self.logger.info('Already up to date.')
                 return 1
-            print('[o] Queue updated.')
+            self.logger.info('Queue updated.')
         else:
             if self.cap_list:
-                print('[*] No caps, initializing...')
+                self.logger.info('No caps enqueued, initializing...')
                 caps_to_add = self.cap_list
             elif current_caps:
                 return 0
@@ -115,10 +117,10 @@ class Analyzer:
         Dissects the cap file to extract info.
         """
         if cap is None:
-            print('[X] No caps to parse!')
+            self.logger.info('[X] No caps to parse!')
             return 0
 
-        print('[*] Started parsing...')
+        self.logger.info('Parsing cap ' + cap.input_filename[-15:])
 
         pipeline = self.r.pipeline()
         for packet in cap:
@@ -167,9 +169,9 @@ class Analyzer:
 
     def pop_cap(self):
         if not self.dataset:
-            absolute_path = self.r_d4.rpop(self.queue)
+            absolute_path = self.r_d4.rpop(self.queue).decode()
         else:
-            absolute_path = self.r.rpop('to_scan')
+            absolute_path = self.r.lpop('to_scan').decode()
         return get_cap(absolute_path)
 
     def process_d4(self):

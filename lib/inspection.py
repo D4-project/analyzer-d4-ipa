@@ -129,16 +129,15 @@ def get_files(path) -> list:
     return caps
 
 
-def init_cap_list(dataset_path: str, daylist: list) -> list:
-    cap_list = []
-    if not daylist:
-        return []
-    for day in daylist:
-        cap_path = dataset_path + str(day) + '/*.gz'
-        caps = get_files(cap_path)
-        caps.sort()
-        cap_list += caps
-    return cap_list
+def init_cap_list(dataset_path: str) -> list:
+    if dataset_path[-1] == '/':
+        extension = '*.gz'
+    else:
+        extension = '/*.gz'
+    cap_path = dataset_path + extension
+    caps = get_files(cap_path)
+    caps.sort()
+    return caps
 
 
 def list_caps(state: str, redis):

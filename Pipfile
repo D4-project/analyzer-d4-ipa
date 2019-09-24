@@ -10,7 +10,7 @@ redis = "*"
 hiredis = "*"
 pyshark = "*"
 ipa = {editable = true,path = "."}
-markdown = "*"
+markdown-strings = "*"
 
 [requires]
 python_version = "3.6"

@@ -31,7 +31,7 @@ pipenv install
 
 ## Usage
 #### Start the redis server
-Don't forget to set the DB directory in the redis.conf configuration. By default, the redis for Passive DNS is running on TCP port 6400
+Don't forget to set the DB directory in the redis.conf configuration. By default, the redis for IPA is running on TCP port 6405.
 ```shell script
 ../redis/src/redis-server ./etc/redis.conf
 ```
@@ -41,8 +41,7 @@ Don't forget to set the DB directory in the redis.conf configuration. By default
 cd ./etc
 cp analyzer.conf.sample analyzer.conf
 ```
-
-Edit the analyzer.conf to match the UUID of the analyzer queue from your D4 server.
+Edit analyzer.conf to match the UUID of the analyzer queue from your D4 server.
 ```shell script
 [global]
 my-uuid = 6072e072-bfaa-4395-9bb1-cdb3b470d715
@@ -51,7 +50,7 @@ d4-server = 127.0.0.1:6380
 logging-level = INFO
 ```
 
-Then you can start the analyzer.
+#### Start the analyzer
 ```shell script
 cd ../bin
 python3 run_ipa.py

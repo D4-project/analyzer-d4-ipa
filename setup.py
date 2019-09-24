@@ -12,7 +12,7 @@ setup(
     url='https://github.com/D4-project/analyzer-d4-ipa',
     description='Pcap icmp parser focused on DDoS detection',
     packages=['lib'],
-    scripts=[],
+    scripts=['bin/run_ipa.py', 'bin/export.py'],
     include_package_data=True,
     classifiers=[
         'License :: OSI Approved :: BSD License',
