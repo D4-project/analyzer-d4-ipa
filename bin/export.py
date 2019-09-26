@@ -35,3 +35,7 @@ def export_icmp_types():
     for key in redis_dict:
         res += mds.table_row([key.decode(), redis_dict[key].decode()], [10, 10]) + '\n'
     return res
+
+
+if __name__ == "__main__":
+    export_icmp_types()
