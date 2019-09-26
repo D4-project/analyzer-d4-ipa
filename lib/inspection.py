@@ -120,8 +120,12 @@ proto_dict = {
     }
 
 
-def get_cap(path_to_cap):
+def get_raw_cap(path_to_cap: str):
     return FileCapture(input_file=path_to_cap, display_filter='icmp', use_json=True, include_raw=True)
+
+
+def get_cap(path_to_cap: str):
+    return FileCapture(input_file=path_to_cap, display_filter='icmp')
 
 
 def get_files(path) -> list:
@@ -151,11 +155,11 @@ def list_caps(state: str, redis):
 def get_protocol(packet):
     if 'ip_proto' in packet.icmp.field_names:
         protocol = str(packet.icmp.ip_proto)
-        if int(protocol) in range(143, 253):
+        if protocol in unassigned_proto:
             return protocol + ' (unassigned)'
         ip_proto = proto_dict[protocol]
     else:
-        return 'non-backscatter-icmp'
+        return 'nbs-icmp'
     return protocol + ' : ' + str(ip_proto)
 
 
@@ -163,8 +167,6 @@ def get_icmp_payload(packet):
     if 'data' in packet.icmp.field_names:
         return str(packet.icmp.data)
     elif packet.icmp.field_names != ['type', 'code', 'checksum', 'checksum_status', 'ident', 'seq', 'seq_le']:
-        print(packet.icmp.field_names)
-        print(packet.icmp)
         return 'No data'
 
 

@@ -24,7 +24,7 @@ import time
 import configparser
 import logging
 
-from lib.inspection import get_cap, get_protocol, check_icmp_checksum, get_icmp_payload, get_icmp_ip, \
+from lib.inspection import get_cap, get_raw_cap, get_protocol, check_icmp_checksum, get_icmp_payload, get_icmp_ip, \
     unassigned_icmp_types, deprecated_icmp_types, get_src_port, get_dst_port, list_caps, init_cap_list
 
 
@@ -69,7 +69,7 @@ class Analyzer:
             self.cap_list = []
             self.logger.info("Adding dataset caps to local queue")
             self.cap_list = init_cap_list(self.dataset)
-            self.logger.info(len(self.cap_list))
+            self.logger.info('Added ' + str(len(self.cap_list)) + ' caps.')
             self.update_queue()
             self.logger.info("Processing...")
             self.process_local()
@@ -79,7 +79,6 @@ class Analyzer:
             if c == 0:
                 self.enqueue_caps(cap_list=list_caps('scanning', self.r))
                 self.r.delete('scanning')
-                print('[-] Process remaining unfinished caps.')
                 self.process_local()
 
     def enqueue_caps(self, cap_list: list):
@@ -105,7 +104,6 @@ class Analyzer:
             self.logger.info('Queue updated.')
         else:
             if self.cap_list:
-                self.logger.info('No caps enqueued, initializing...')
                 caps_to_add = self.cap_list
             elif current_caps:
                 return 0
@@ -117,7 +115,7 @@ class Analyzer:
         Dissects the cap file to extract info.
         """
         if cap is None:
-            self.logger.info('[X] No caps to parse!')
+            self.logger.info('No caps to parse!')
             return 0
 
         self.logger.info('Parsing cap ' + cap.input_filename[-15:])
@@ -130,7 +128,7 @@ class Analyzer:
             icmp_type = str(icmp_layer.type)
             # icmp_code = str(icmp_layer.code)
             protocol = get_protocol(packet)
-            checksum_status = check_icmp_checksum(packet.icmp_raw.value)
+            # checksum_status = check_icmp_checksum(packet.icmp_raw.value)
 
             if protocol == '1 : icmp':
                 payload = get_icmp_payload(packet)
@@ -149,8 +147,8 @@ class Analyzer:
             else:
                 pipeline.hincrby('icmp', icmp_type)
 
-            pipeline.hincrby('checksum', 'total')
-            pipeline.hincrby('checksum', checksum_status)
+            # pipeline.hincrby('checksum', 'total')
+            # pipeline.hincrby('checksum', checksum_status)
 
             # entry = str(get_src_port(packet)) + ':' + protocol + ':' + icmp_type + ':' + icmp_code
             # pipeline.zadd(source_ip, {entry: 1}, incr=True)
@@ -172,11 +170,11 @@ class Analyzer:
             absolute_path = self.r_d4.rpop(self.queue).decode()
         else:
             absolute_path = self.r.lpop('to_scan').decode()
-        return get_cap(absolute_path)
+        return get_cap(absolute_path), get_raw_cap(absolute_path)
 
     def process_d4(self):
         while True:
-            d4_cap = self.pop_cap()
+            d4_cap, d4_raw_cap = self.pop_cap()
             if d4_cap is None:
                 time.sleep(1)
                 continue
@@ -186,7 +184,7 @@ class Analyzer:
 
     def process_local(self):
         while self.r.llen(self.queue) != 0:
-            cap = self.pop_cap()
+            cap, raw_cap = self.pop_cap()
             self.r.rpush('scanning', cap.input_filename)
             self.parse_cap(cap)
             self.r.lrem('scanning', 0, cap.input_filename)

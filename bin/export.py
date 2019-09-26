@@ -21,21 +21,40 @@
 import markdown_strings as mds
 import redis
 import os
-
+import time
 
 analyzer_redis_host = os.getenv('D4_ANALYZER_REDIS_HOST', '127.0.0.1')
 analyzer_redis_port = int(os.getenv('D4_ANALYZER_REDIS_PORT', 6405))
 r = redis.Redis(host=analyzer_redis_host, port=analyzer_redis_port)
 
+table_line = '| :--------------- | :--------------- |\n'
+padding = [16, 16]
+
+
+def init_export_dir(path: str):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
 
 def export_icmp_types():
-    res = mds.table_row(['ICMP Type', 'Count'], [10, 10]) + '\n'
-    res += '| :----- | -----: |\n'
+    res = mds.table_row(['ICMP Type', 'Count'], padding) + '\n' + table_line
     redis_dict = r.hgetall('icmp')
     for key in redis_dict:
-        res += mds.table_row([key.decode(), redis_dict[key].decode()], [10, 10]) + '\n'
+        res += mds.table_row([key.decode(), redis_dict[key].decode()], padding) + '\n'
+    return res
+
+
+def export_protocols():
+    res = mds.table_row(['Protocol', 'Count'], padding) + '\n' + table_line
+    redis_list = r.zrange('protocols', 0, -1, withscores=True)
+    for item in redis_list:
+        res += mds.table_row([item[0].decode(), int(item[1])], padding) + '\n'
     return res
 
 
 if __name__ == "__main__":
-    export_icmp_types()
+    pwd = os.getcwd() + '/exports/'
+    init_export_dir(pwd)
+    with open(pwd + str(time.time())[:10] + '-export.md', 'w') as exp_file:
+        exp_file.write(export_icmp_types() + '\n')
+        exp_file.write(export_protocols() + '\n')

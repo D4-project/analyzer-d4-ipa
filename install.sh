@@ -7,6 +7,6 @@ export PIPENV_VENV_IN_PROJECT=1
 
 if [ -z "$VIRTUAL_ENV" ]; then
     pipenv install
-    export IPA_HOME=$(pwd)
+    echo export IPA_HOME=$(pwd) >> .venv/bin/activate
 fi
 

@@ -1,4 +1,6 @@
 .idea/
 ipa.egg-info/
 .venv
+exports/
 db/
+__pycache__/
